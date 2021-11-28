@@ -7,21 +7,14 @@ import cv2
 import numpy as np
 from joblib import Parallel, delayed
 from numpy.lib.stride_tricks import sliding_window_view
+from definitions import BaseConfig
 
 
 class DEFAULTS:
     CONFIG_FILE_PATH = "config.json"
-    BLUR_KERNEL_SIZE = 1
-    THRESHOLD = 180
-    BASE_ERROR_WEIGHT = 1
-    TEMPLATE_ERROR_WEIGHT = 1
 
 
 def prepare_image(image_name: str, blur_kernel_size: int, threshold: int, bin_scale: bool = True) -> np.ndarray:
-    assert (
-        blur_kernel_size % 2 == 1
-    ) and blur_kernel_size > 0, "Guassian blur kernel size must be an odd positive number"
-    assert threshold >= 0 and threshold <= 255, "Threshold must be between 0 and 255 inclusive"
     # Load image as 2D grayscale
     base_image = cv2.imread(image_name, cv2.IMREAD_GRAYSCALE)
     # Maximize contrast
@@ -67,38 +60,38 @@ def process(args: argparse.Namespace):
     config_path = args.config or DEFAULTS.CONFIG_FILE_PATH
     print(f"Using {config_path} as config...")
     with open(config_path, "r") as f:
-        config = json.load(f)
+        config = BaseConfig(**json.load(f))
 
-    base_image = config["base_image"]
+    base_image = config.base_image
     base_image_prepared = prepare_image(
-        base_image["file_path"],
-        blur_kernel_size=base_image.get("blur_kernel_size", DEFAULTS.BLUR_KERNEL_SIZE),
-        threshold=base_image.get("threshold", DEFAULTS.THRESHOLD),
+        base_image.file_path,
+        blur_kernel_size=base_image.blur_kernel_size,
+        threshold=base_image.threshold,
     )
 
     print("Preparing templates for processing...")
     templates_prepared = (
         (
             prepare_image(
-                template_image["file_path"],
-                blur_kernel_size=template_image.get("blur_kernel_size", DEFAULTS.BLUR_KERNEL_SIZE),
-                threshold=template_image.get("threshold", DEFAULTS.THRESHOLD),
+                template_image.file_path,
+                blur_kernel_size=template_image.blur_kernel_size,
+                threshold=template_image.threshold,
             ),
-            template_image["method"],
-            template_image["method_parameters"],
+            template_image.method,
+            template_image.method_parameters,
         )
-        for template_image in config["templates"]
+        for template_image in config.templates
     )
 
     print("Generating composites...")
     start_time = time()
-    composites = Parallel(n_jobs=len(config["templates"]))(
+    composites = Parallel(n_jobs=len(config.templates))(
         delayed(convolve_template_xor)(
             base_image_prepared,
             template_prepared,
-            error_threshold=method_parameters["error_threshold"],
-            base_error_weight=method_parameters.get("base_error_weight", DEFAULTS.BASE_ERROR_WEIGHT),
-            template_error_weight=method_parameters.get("template_error_weight", DEFAULTS.TEMPLATE_ERROR_WEIGHT),
+            error_threshold=method_parameters.error_threshold,
+            base_error_weight=method_parameters.base_error_weight,
+            template_error_weight=method_parameters.template_error_weight,
         )
         for template_prepared, _, method_parameters in templates_prepared
     )
@@ -110,8 +103,8 @@ def process(args: argparse.Namespace):
         output_image = cv2.bitwise_or(output_image, composite)
     output_image = (1 - output_image) * 255
 
-    print(f"Writing output image to {config['write_path']}")
-    cv2.imwrite(config["write_path"], output_image)
+    print(f"Writing output image to {config.write_path}")
+    cv2.imwrite(config.write_path, output_image)
 
 
 def get_args() -> argparse.Namespace:
