@@ -1,0 +1,54 @@
+{
+    "write_path": "result.png",
+    "base_image": {
+        "file_path": "example/test_image.png",
+        "blur_kernel_size": 1,
+        "threshold": 180
+    },
+    "templates": [
+        {
+            "file_path": "example/natural.png",
+            "blur_kernel_size": 1,
+            "threshold": 180,
+            "method": "xor_weighted",
+            "method_parameters": {
+                "error_threshold": 0.2,
+                "base_error_weight": 1,
+                "template_error_weight": 2
+            }
+        },
+        {
+            "file_path": "example/flat.png",
+            "blur_kernel_size": 1,
+            "threshold": 180,
+            "method": "xor_weighted",
+            "method_parameters": {
+                "error_threshold": 0.19,
+                "base_error_weight": 1,
+                "template_error_weight": 2
+            }
+        },
+        {
+            "file_path": "example/sharp.png",
+            "blur_kernel_size": 1,
+            "threshold": 180,
+            "method": "xor_weighted",
+            "method_parameters": {
+                "error_threshold": 0.19,
+                "base_error_weight": 1,
+                "template_error_weight": 2
+            }
+        },
+        {
+            "file_path": "example/accent.png",
+            "blur_kernel_size": 1,
+            "threshold": 180,
+            "method": "xor_weighted",
+            "method_parameters": {
+                "error_threshold": 0.19,
+                "base_error_weight": 1,
+                "template_error_weight": 3
+            }
+        }
+    ]
+}
